@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pull-image
+  name: pull-image-deploy
+spec:
+  selector:
+    matchLabels:
+      app: pull-image
+  template:
+    metadata:
+      labels:
+        app: pull-image
+    spec:
+      securityContext:
+        fsGroup: 412
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: "/var/run/docker.sock"
+        - name: docker-directory
+          hostPath:
+            path: "/var/lib/docker"
+      nodeSelector:
+        value: pullimage
+      containers:
+        - name: docker-image-cleanup
+          image: vishu2498/pullimage
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          env:
+            - name: PRUNE_INTERVAL_SECONDS
+              value: "30"
+            - name: PRUNE_DANGLING
+              value: "true"
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: docker-sock
+              readOnly: false
+            - mountPath: "/var/lib/docker"
+              name: docker-directory
+              readOnly: false
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: roleForPullImage
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: roleBindingForPullImage
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: default # Name is case sensitive
+  namespace: default
+roleRef:
+  kind: Role
+  name: roleForPullImage
+  apiGroup: rbac.authorization.k8s.io
