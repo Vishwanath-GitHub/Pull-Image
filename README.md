@@ -1,5 +1,9 @@
 # PULL IMAGE CODE
 
+Motto:
+
+To design a program which when running inside kubernetes cluster can read from a configmap (list of desired images) and pull those images on a node on which it is running. This is code should be running inside a deployment.
+
 Steps to run this code:
 
 1. kubectl label node <node-name> value=pullimage
